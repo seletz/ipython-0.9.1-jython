@@ -1,0 +1,35 @@
+***********
+IPython API
+***********
+
+:mod:`IPython.genutils`
+=======================
+
+.. automodule:: IPython.genutils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+:mod:`IPython.kernel`
+=====================
+
+.. automodule:: IPython.kernel
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+:mod:`IPython.config`
+=====================
+
+.. automodule:: IPython.config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+:mod:`IPython.gui`
+==================
+
+.. automodule:: IPython.gui
+   :members:
+   :undoc-members:
+   :show-inheritance:

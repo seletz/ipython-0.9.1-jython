@@ -1,0 +1,15 @@
+.. _api-index:
+
+###################
+  The IPython API
+###################
+
+.. htmlonly::
+
+   :Release: |version|
+   :Date: |today|
+
+.. toctree::
+
+   ipython_api.txt
+   
