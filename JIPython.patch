@@ -1,0 +1,455 @@
+diff -Naur IPython/genutils.py IPython.jython/genutils.py
+--- IPython/genutils.py	2008-09-10 18:59:32.000000000 -0400
++++ IPython.jython/genutils.py	2009-07-17 16:30:25.000000000 -0400
+@@ -942,7 +942,7 @@
+             raise KeyError
+         return homedir
+     except KeyError:
+-        if os.name == 'posix':
++        if os.name in ['posix','java']:
+             raise HomeDirError,'undefined $HOME, IPython can not proceed.'
+         elif os.name == 'nt':
+             # For some strange reason, win9x returns 'nt' for os.name.
+@@ -986,7 +986,7 @@
+     This uses the logic in `get_home_dir` to find the home directory
+     and the adds either .ipython or _ipython to the end of the path.
+     """
+-    if os.name == 'posix':
++    if os.name in ['posix','java']:
+          ipdir_def = '.ipython'
+     else:
+          ipdir_def = '_ipython'
+@@ -1488,7 +1488,7 @@
+     If the optional backup argument is given as false, no backup of the
+     original file is left.  """
+ 
+-    backup_suffixes = {'posix':'~','dos':'.bak','nt':'.bak','mac':'.bak'}
++    backup_suffixes = {'posix':'~','dos':'.bak','nt':'.bak','mac':'.bak', 'java':'~'}
+ 
+     bak_filename = filename + backup_suffixes[os.name]
+ 
+@@ -1513,7 +1513,7 @@
+ 
+     Makes some attempts at finding an OS-correct one."""
+ 
+-    if os.name == 'posix':
++    if os.name in ['posix','java']:
+         default_pager_cmd = 'less -r'  # -r for color control sequences
+     elif os.name in ['nt','dos']:
+         default_pager_cmd = 'type'
+diff -Naur IPython/GnuRL.py IPython.jython/GnuRL.py
+--- IPython/GnuRL.py	1969-12-31 19:00:00.000000000 -0500
++++ IPython.jython/GnuRL.py	2009-07-17 16:30:25.000000000 -0400
+@@ -0,0 +1,154 @@
++# -*- coding: utf-8 -*-
++"""
++Tries to wrap org.gnu.readline impl as if it was default python readline module
++"""
++import org.gnu.readline.Readline as Readline
++import org.python.util.ReadlineWrapper as ReadlineWrapper
++
++def cleanup():
++    Readline.cleanup()
++    pass
++
++class RLWrapper(ReadlineWrapper):
++    def __init__(self, printUnsupported=False):
++        ReadlineWrapper.__init__(self)
++        self.printUnsupported=printUnsupported
++        self.completeFunc=Readline.getCompleter()
++        self.initFunc=None
++        Readline.setCompleter(self)
++        pass
++    
++    def py_complete(self, text, state):
++        """call the registered function to do completion"""
++        if self.completeFunc is None:
++            return None
++        return self.completeFunc(text,state)
++    
++    def py_doinit(self):
++        if self.initFunc is not None:
++            self.initFunc()
++        pass
++
++    def parse_and_bind(self,string):
++        """Parse and execute single line of a readline init file."""
++        return Readline.parseAndBind(string)
++
++    def get_line_buffer(self):
++        """Return the current contents of the line buffer."""
++        return Readline.getLineBuffer()
++    
++    def read_init_file(self,filename):
++        """Parse a readline initialization file."""
++        Readline.readInitFile(filename)
++        pass
++
++    def read_history_file(self,filename):
++        """Load a readline history file. The     default filename is ~/.history."""
++        Readline.readHistoryFile(filename)
++        pass
++    
++    def write_history_file(self,filename):
++        """Save a readline history file. The         default filename is ~/.history."""
++        Readline.readHistoryFile(writeHistoryFile)
++        pass
++        
++    def clear_history(self):
++        """Clear the current history. (Note: this function is not available if the installed version of GNU readline doesn’t support it.)"""
++        Readline.clearHistory()
++        pass
++    
++    def get_current_history_length(self):
++        """Return the number of lines currently in the history."""
++        return Readline.getHistorySize()
++
++    def get_history_item(self,index):
++        """Return the current contents of history item at index."""
++        return self.getHistoryLine(index)
++        
++    def set_completer(self,function):
++        """Set or remove the completer function. If function is specified, it will be used as the new completer function; if omitted or None, any completer function already installed is removed. The completer function is called as function(text, state), for state in 0, 1, 2, ..., until it returns a non-string value. It should return the next possible completion starting with text."""
++        self.completeFunc=function
++        pass
++    
++    def get_completer(self):
++        """Get the completer function, or None if no completer function has been set."""
++        return self.completeFunc
++        
++    def set_completer_delims(self,string):
++        """Set the readline word delimiters for tab-completion."""
++        Readline.setWordBreakCharacters(string)
++
++    def get_completer_delims(self):
++        """Get the readline word delimiters for tab-completion."""
++        return str(Readline.getWordBreakCharacters())
++
++    def add_history(self,line):
++        """Append a line to the history buffer, as if it was the last line typed."""
++        Readline.addToHistory(line)
++
++    def set_startup_hook(self,function):
++        """Set or remove the startup_hook function. If function is specified, it will be used as the new startup_hook function; if omitted or None, any hook function already installed is removed. The startup_hook function is called with no arguments just before readline prints the first prompt."""
++        self.initFunc=function
++        pass
++    
++    def get_completion_type(self):
++        """Get the type of completion being attempted."""
++        self.unsupportedFunction("get_completion_type()") #XXX
++        return 0
++    
++    def get_begidx(self):
++        """Get the beginning index of the readline tab-completion scope."""
++        self.unsupportedFunction("get_begidx()") #XXX
++        return 0
++    
++    def get_endidx(self):
++        """Get the ending index of the readline tab-completion scope."""
++        self.unsupportedFunction("get_endidx()") #XXX
++        return 1
++    
++    def redisplay(self):
++        """Change what’s displayed on the screen to reflect the current contents of the line buffer."""
++        self.unsupportedFunction("redisplay()") #XXX
++        pass
++    
++    def get_history_length(self):
++        """Return the desired length of the history file. Negative values imply unlimited history file size."""
++        self.unsupportedFunction("get_history_length()") #XXX
++        return - 1
++    
++    def set_history_length(self,length):
++        """Set the number of lines to save in the history file. write_history_file() uses this value to truncate the history file when saving. Negative values imply unlimited history file size."""
++        self.unsupportedFunction("set_history_length(%i)"%(length)) #XXX
++        pass
++    
++    def set_completion_display_matches_hook(self,function):
++        """Set or remove the completion display function. If function is specified, it will be used as the new completion display function; if omitted or None, any completion display function already installed is removed. The completion display function is called as function(substitution, [matches], longest_match_length) once each time matches need to be displayed."""
++        self.unsupportedFunction("set_completion_display_matches_hook(function)") #XXX
++
++    def remove_history_item(self,pos):
++        """Remove history item specified by its position from the history."""
++        self.unsupportedFunction("remove_history_item(%i)"%(pos)) #XXX
++        pass
++
++    def replace_history_item(self,pos, line):
++        """Replace history item specified by its position with the given line."""
++        self.unsupportedFunction("replace_history_item(%i, %i)"%(pos,line)) #XXX
++        pass
++
++    def insert_text(self,string):
++        """Insert text into the command line."""
++        self.unsupportedFunction("insert_text(%s)"%(string)) #XXX
++        pass
++
++    def set_pre_input_hook(self,function):
++        """Set or remove the pre_input_hook function. If function is specified, it will be used as the new pre_input_hook function; if omitted or None, any hook function already installed is removed. The pre_input_hook function is called with no arguments after the first prompt has been printed and just before readline starts reading input characters."""
++        self.unsupportedFunction("set_pre_input_hook([function])") #XXX
++        pass
++    
++    def unsupportedFunction(self, msg):
++        if self.printUnsupported:
++            print "UNSUPPORTED: '%s'" %(msg)
++            pass
++        pass
++    
++    pass #end RLWrapper
+diff -Naur IPython/IJython.py IPython.jython/IJython.py
+--- IPython/IJython.py	1969-12-31 19:00:00.000000000 -0500
++++ IPython.jython/IJython.py	2009-07-17 16:30:26.000000000 -0400
+@@ -0,0 +1,8 @@
++# -*- coding: utf-8 -*-
++import IPython
++import GnuRL
++
++try:
++   IPython.Shell.start().mainloop(sys_exit=False)
++finally:
++ GnuRL.cleanup()
+diff -Naur IPython/iplib.py IPython.jython/iplib.py
+--- IPython/iplib.py	2008-08-23 12:37:28.000000000 -0400
++++ IPython.jython/iplib.py	2009-07-17 16:30:26.000000000 -0400
+@@ -544,7 +544,7 @@
+ 
+         # Make some aliases automatically
+         # Prepare list of shell aliases to auto-define
+-        if os.name == 'posix':
++        if os.name in ['posix','java']:
+             auto_alias = ('mkdir mkdir', 'rmdir rmdir',
+                           'mv mv -i','rm rm -i','cp cp -i',
+                           'cat cat','less less','clear clear',
+@@ -1066,7 +1066,7 @@
+         If called with no arguments, it acts as a toggle."""
+ 
+         if not self.has_readline:
+-            if os.name == 'posix':
++            if os.name in ['posix','java']:
+                 warn("The auto-indent feature requires the readline library")
+             self.autoindent = 0
+             return
+diff -Naur IPython/ipmaker.py IPython.jython/ipmaker.py
+--- IPython/ipmaker.py	2008-06-04 04:15:17.000000000 -0400
++++ IPython.jython/ipmaker.py	2009-07-17 16:30:25.000000000 -0400
+@@ -134,7 +134,7 @@
+     # Platform-dependent suffix and directory names.  We use _ipython instead
+     # of .ipython under win32 b/c there's software that breaks with .named
+     # directories on that platform.
+-    if os.name == 'posix':
++    if os.name in ['posix','java']:
+         rc_suffix = ''
+         ipdir_def = '.ipython'
+     else:
+@@ -549,7 +549,7 @@
+         try:
+             ed = os.environ['EDITOR']
+         except KeyError:
+-            if os.name == 'posix':
++            if os.name in ['posix','vi']:
+                 ed = 'vi'  # the only one guaranteed to be there!
+             else:
+                 ed = 'notepad' # same in Windows!
+diff -Naur IPython/ipstruct.py IPython.jython/ipstruct.py
+--- IPython/ipstruct.py	2008-08-02 04:53:11.000000000 -0400
++++ IPython.jython/ipstruct.py	2009-07-17 16:30:26.000000000 -0400
+@@ -18,8 +18,11 @@
+ 
+ import types
+ import pprint
++import os
+ 
+ from IPython.genutils import list2dict2
++if os.name == 'java':
++    from org.python.core import PyStringMap
+ 
+ class Struct:
+     """Class to mimic C structs but also provide convenient dictionary-like
+@@ -123,8 +126,9 @@
+         if isinstance(dict,Struct):
+             dict = dict.dict()
+         elif dict and  type(dict) is not types.DictType:
+-            raise TypeError,\
+-                  'Initialize with a dictionary or key=val pairs.'
++            if not ( os.name=='java' and type(dict) is type(PyStringMap()) ) :
++                raise TypeError,\
++                      'Initialize with a dictionary or key=val pairs. type=%s'%(type(dict))
+         dict.update(kw)
+         # do the updating by hand to guarantee that we go through the
+         # safety-checked __setitem__
+diff -Naur IPython/java_readline.py IPython.jython/java_readline.py
+--- IPython/java_readline.py	1969-12-31 19:00:00.000000000 -0500
++++ IPython.jython/java_readline.py	2009-07-17 16:30:25.000000000 -0400
+@@ -0,0 +1,99 @@
++# -*- coding: utf-8 -*-
++import GnuRL
++
++console = GnuRL.RLWrapper()
++
++def cleanup():
++    GnuRL.cleanup()
++    pass
++
++def parse_and_bind(string):
++    console.parse_and_bind(string)
++    pass
++
++def get_line_buffer():
++    return console.get_line_buffer()
++
++def read_init_file(filename):
++    console.read_init_file(filename)
++    pass
++
++def read_history_file(filename="~/.ipython/jhistory"):
++    console.read_history_file(filename)
++    pass
++    
++def write_history_file(filename="~/.ipython/jhistory"):
++    console.write_history_file(filename)
++    pass
++        
++def clear_history():
++    console.clearHistory()
++    pass
++    
++def get_current_history_length():
++    return console.get_current_history_length()
++
++def get_history_item(index):
++    return console.get_history_item(index)
++        
++def set_completer(function=None):
++    console.set_completer(function)
++    pass
++    
++def get_completer():
++    return console.get_completer()
++
++def set_completer_delims(string):
++    console.set_completer_delims(string)
++    pass
++
++def get_completer_delims():
++    return console.get_completer_delims()
++
++def add_history(line):
++    console.add_history(line)
++    pass
++
++def get_completion_type():
++    return console.get_completion_type()
++
++def get_begidx():
++    return console.get_begidx()
++
++def get_endidx():
++    return console.get_endidx()
++
++def redisplay():
++    console.redisplay()
++    pass
++
++def get_history_length():
++    return console.get_history_length()
++
++def set_history_length(length):
++    console.set_history_length(length)
++    pass
++
++def set_completion_display_matches_hook(function=None):
++    console.set_completion_display_matches_hook(function)
++    pass
++
++def remove_history_item(pos):
++    console.remove_history_item(pos)
++    pass
++
++def replace_history_item(pos, line):
++    console.replace_history_item(pos, line)
++    pass
++    
++def insert_text(string):
++    conosole.insert_text(string)
++    pass
++
++def set_pre_input_hook(function=None):
++    console.set_pre_input_hook(function)
++    pass
++    
++def set_startup_hook(function=None):
++    console.set_startup_hook(function)
++    pass
+diff -Naur IPython/Magic.py IPython.jython/Magic.py
+--- IPython/Magic.py	2008-08-14 19:59:40.000000000 -0400
++++ IPython.jython/Magic.py	2009-07-17 16:30:25.000000000 -0400
+@@ -2623,7 +2623,7 @@
+         
+         alias_table = self.shell.alias_table
+         syscmdlist = []
+-        if os.name == 'posix':
++        if os.name in ['posix', 'java']:
+             isexec = lambda fname:os.path.isfile(fname) and \
+                      os.access(fname,os.X_OK)
+         else:
+@@ -2640,7 +2640,7 @@
+         try:
+             # write the whole loop for posix/Windows so we don't have an if in
+             # the innermost part
+-            if os.name == 'posix':
++            if os.name in ['posix', 'java']:
+                 for pdir in path:
+                     os.chdir(pdir)
+                     for ff in os.listdir(pdir):
+diff -Naur IPython/platutils.py IPython.jython/platutils.py
+--- IPython/platutils.py	2008-07-06 12:52:52.000000000 -0400
++++ IPython.jython/platutils.py	2009-07-17 16:30:26.000000000 -0400
+@@ -22,6 +22,8 @@
+ # Import the platform-specific implementations
+ if os.name == 'posix':
+     import platutils_posix as _platutils
++elif os.name == 'java':
++    import platutils_dummy as _platutils
+ elif sys.platform == 'win32':
+     import platutils_win32 as _platutils
+ else:
+diff -Naur IPython/rlineimpl.py IPython.jython/rlineimpl.py
+--- IPython/rlineimpl.py	2009-07-17 16:46:30.000000000 -0400
++++ IPython.jython/rlineimpl.py	2009-07-17 16:35:43.000000000 -0400
+@@ -9,18 +9,29 @@
+ $Id: Magic.py 1096 2006-01-28 20:08:02Z vivainio $"""
+ 
+ import sys
++import os
+ 
+-try:
+-    from readline import *
+-    import readline as _rl
+-    have_readline = True
+-except ImportError:
++# can't use sys.platform because different versions of
++# java have diff names
++if os.name == 'java':
+     try:
+-        from pyreadline import *
+-        import pyreadline as _rl
++        from java_readline import *
++        import java_readline as _rl
+         have_readline = True
+-    except ImportError:    
++    except ImportError:
+         have_readline = False
++else:
++    try:
++        from readline import *
++        import readline as _rl
++        have_readline = True
++    except ImportError:
++        try:
++            from pyreadline import *
++            import pyreadline as _rl
++            have_readline = True
++        except ImportError:    
++            have_readline = False
+ 
+ if sys.platform == 'win32' and have_readline:
+     try:
